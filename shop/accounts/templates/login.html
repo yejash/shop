@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        /* Reset default styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            height: 100vh;
+            background: url('https://png.pngtree.com/thumb_back/fh260/background/20230706/pngtree-money-and-coins-calculator-tracking-income-and-expenses-with-3d-rendering-image_3804538.jpg') no-repeat center center/cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .login-container {
+            width: 350px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        h2 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            color: #fff;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 16px;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .message {
+            color: #3400e0;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>Login</h2>
+        {% if messages %}
+        {% for message in messages %}
+        <p class="message">{{ message }}</p>
+        {% endfor %}
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <label>Username:</label>
+            <input type="text" name="username" placeholder="Enter username" required>
+
+            <label>Password:</label>
+            <input type="password" name="password" placeholder="Enter password" required>
+
+            <button type="submit">Login</button>
+            <p style="text-align:center;">
+                <a href="{% url 'register' %}" style="color:#fff;">Create Account</a> |
+                <a href="{% url 'forgot_password' %}" style="color:#fff;">Forgot Password?</a>
+            </p>
+        </form>
+    </div>
+</body>
+
+</html>
+

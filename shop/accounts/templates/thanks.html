@@ -1,0 +1,238 @@
+{% block content %}
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap');
+
+    body {
+      padding-top: 80px;
+      background: url('https://media.istockphoto.com/id/1284754354/photo/white-old-brick-wall-background-with-lamps.jpg?s=612x612&w=0&k=20&c=WqMiFd_bEBX7ymJd9nCqFvNyiPkwBVjivFavOoBrQPc=') no-repeat center center fixed;
+      background-size: cover;
+
+      /* Local image file */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      padding-top: 60px;
+      color: #000000;
+    }
+
+    a.nav-link {
+      color: rgb(10, 0, 0);
+      text-decoration: none;
+      margin: 0 12px;
+      font-weight: bold;
+      font-size: 30px;
+      font-family: "Tangerine", cursive;
+    }
+
+    .container {
+      max-width: 800px;
+      max-height: 500px;
+      margin-top: 3rem;
+      margin-left: 20%;
+      background: rgba(255, 255, 255, 0.027);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.6s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .container1 {
+      max-width: 800px;
+      max-height: 800PX;
+      margin-top: 5rem;
+      background: rgba(255, 255, 255, 0.434);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.6s ease forwards;
+    }
+
+    h1 {
+      text-align: center;
+      color: #000000;
+      margin-bottom: 20px;
+    }
+
+    p {
+      line-height: 1.7;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .contact {
+      margin-top: 30px;
+      border-top: 1px solid #ccc;
+      padding-top: 20px;
+    }
+
+    .contact h3 {
+      margin-bottom: 10px;
+      color: #555;
+    }
+
+    .contact p {
+      margin: 5px 0;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 50px;
+      color: rgb(7, 0, 0);
+      display: flex;
+      align-items: center;
+      justify-content: left;
+      z-index: 1000;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      flex-direction: row;
+      -webkit-backdrop-filter: blur(12px);
+      color: rgb(0, 0, 0);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: stretch;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 999;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    header nav {
+      display: flex;
+      flex-direction: row;
+    }
+
+    header nav a:hover {
+      transform: translateY(-5px);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    input,
+    select {
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #f10606f1;
+      background-color: transparent;
+      color: #ffffff;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #2575fc;
+      box-shadow: 0 0 5px rgba(37, 117, 252, 0.5);
+    }
+
+    button {
+      background-color: #62d5be;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #09204b;
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 15px;
+      color: #2575fc;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    textarea {
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #f10606f1;
+      background-color: transparent;
+      color: #ffffff;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div style="font-size:20px; font-weight:bold;">💰 My Finance App</div>
+    <nav>
+      <a class="nav-link" href="{% url 'dashboard' %}">🏠 Dashboard</a>
+      <a class="nav-link" href="{% url 'expenses' %}">💸 Expenses</a>
+      <a class="nav-link" href="{% url 'income' %}">📥 Income</a>
+      <a class="nav-link" href="{% url 'about' %}">ℹ️ About</a>
+    </nav>
+
+    <div style="display:flex; align-items:center;">
+      {% if user.is_authenticated %}
+      <div style="font-size:14px; color:#020000;">
+        👋 Hello, {{ user.username }}
+        <a href="{% url 'logout' %}"
+          style="color:#070000; margin-left:0px; margin-right: 35px; text-decoration: none; font-weight: bold;font-size: 20px;">🔓
+          Logout</a>
+      </div>
+      {% if profile.avatar %}
+      <img class="avatar" src="{{ profile.avatar.url }}" alt="avatar">
+      {% endif %}
+      {% else %}
+      <a class="nav-link" href="{% url 'login' %}">Login</a>
+      {% endif %}
+    </div>
+
+  </header>
+  <div class="container">
+    <h1>Thanku</h1>
+
+    
+         <footer>
+    <p>&copy; 2025 Alpha infotech & Design</p>
+  </footer>
+
+</body>
+{% endblock %}

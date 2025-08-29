@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - My Finance App{% endblock %}
+{% block content %}
+
+
+<style>
+body{
+  background: url('https://prod.cdn.business.wfu.edu/uploads/2020/09/Image-Pulls-For-Web-Launch_Masters-in-Accounting-Versus-an-MBA-in-Finance.webp') no-repeat center center fixed;
+      background-size: cover;
+
+}
+  /* amount text colors */
+.amount.income { color: #2ecc71; /* green */ font-weight: 700; }
+.amount.expense { color: #e74c3c; /* red */ font-weight: 700; }
+
+/* optional: subtle row background so rows are clearer */
+.row-income { background: rgba(46, 204, 113, 0.05); }   /* very light green */
+.row-expense { background: rgba(231, 76, 60, 0.04); }   /* very light red */
+
+/* keep table spacing readable */
+.table-amount { white-space: nowrap; padding-right: 10px; }
+
+  .tab {
+      background: #ffffff00;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 950px;
+      margin: auto;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.2);
+      animation: slideIn 0.6s ease forwards;
+    }
+    .tab tr{
+      background: #ffffff00;
+      font-size: 20px;
+      text-align: center;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 950px;
+      margin: auto;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.2);
+      animation: slideIn 0.6s ease forwards;
+    }
+  .dashboard-container {
+    max-width: 1100px;
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 30px;
+    padding: 20px;
+  }
+  .dashboard-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    padding: 20px;
+    text-align: center;
+    color: white;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    display: block;
+  }
+  .dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  }
+  .dashboard-card .title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .dashboard-card .value {
+    font-size: 28px;
+    font-weight: bold;
+  }
+</style>
+<h2 style="color:white">
+  Welcome {{ request.user.username|capfirst }} ({{ role|capfirst }})
+</h2>
+<div class="dashboard-container">
+  <a href="{% url 'income' %}" class="dashboard-card">
+    <div class="title">📥 Income</div>
+    <div style="font-size:24px; margin-top:8px;">₹{{ total_income }}</div>
+  </a>
+
+  <a href="{% url 'expenses' %}" class="dashboard-card">
+    <div class="title">💸 Expenses</div>
+    <div style="font-size:24px; margin-top:8px;">₹{{ total_expense }}</div>
+  </a>
+
+  <a href="#" class="dashboard-card">
+    <div class="title">🧾 Transactions</div>
+    <div style="font-size:24px; margin-top:8px;">{{ transactions_count }}</div>
+  </a>
+
+  <a href="#" class="dashboard-card">
+    <div class="title">💳 Balance</div>
+    <div style="font-size:24px; margin-top:8px;">₹{{ balance }}</div>
+  </a>
+</div>
+
+<!-- Recent transactions -->
+<div class = "tab" style="max-width:1100px; margin:30px auto;">
+  <h3 style="color:white">Recent transactions</h3>
+  <table style="width:100%; background:rgba(224, 204, 204, 0); border-radius:8px; overflow:hidden;">
+    <thead>
+      <tr><th>Date</th><th>Description</th><th>Type</th><th>Amount (₹)</th></tr>
+    </thead>
+    <tbody>
+      {% for tx in recent_transactions %}
+<tr class="{% if tx.type == 'expense' %}row-expense{% else %}row-income{% endif %}">
+  <td>{{ tx.date|date:"d M Y" }}</td>
+  <td>{{ tx.description }}</td>
+  <td>{{ tx.type|capfirst }}</td>
+  <td class="table-amount amount {% if tx.type == 'expense' %}expense{% else %}income{% endif %}">
+    {% if tx.type == 'expense' %}
+      -₹{{ tx.amount|floatformat:2 }}
+    {% else %}
+      +₹{{ tx.amount|floatformat:2 }}
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+    </tbody>
+  </table>
+
+</div>
+
+
+<!-- column CHART DESIGN -->
+ {{ month_labels|json_script:"month-labels" }}
+{{ income_values|json_script:"income-values" }}
+{{ expense_values|json_script:"expense-values" }}
+<!-- Chart container -->
+<!-- Chart wrapper with fixed container height -->
+<div class="chart-wrapper" style="max-width:1100px; margin:30px auto; background: rgba(255, 255, 255, 0.973); padding:16px; border-radius:10px;">
+  <h3 style="color:rgb(13, 13, 13); margin-bottom:8px;">Monthly Income & Expense</h3>
+
+  <!-- Important: fixed-height container avoids resize feedback loops -->
+  <div class="chart-container" style="position:relative; height:360px;">
+    <canvas id="monthlyChart"></canvas>
+  </div>
+</div>
+
+<!-- pie Mode breakdown charts -->
+<div style="max-width:1100px; margin:20px auto; display:flex; gap:18px; align-items:stretch; flex-wrap:wrap;">
+  <div style="flex:1; min-width:280px; background: rgba(255,255,255,0.03); padding:12px; border-radius:10px;">
+    <h4 style="margin:6px 0; color:rgb(7, 0, 0); font-weight: bold;">Income by mode</h4>
+    <div style="position:relative; height:260px;">
+      <canvas id="incomeModesChart"></canvas>
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:280px; background: rgba(255,255,255,0.03); padding:12px; border-radius:10px;">
+    <h4 style="margin:6px 0; color:rgb(8, 0, 0); font-weight: bold;">Expenses by mode</h4>
+    <div style="position:relative; height:260px;">
+      <canvas id="expenseModesChart"></canvas>
+    </div>
+  </div>
+</div>
+<!-- end pie chart -->
+
+<!-- Chart.js (pin a stable version) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+(function(){
+  // 0) Basic safety checks: don't run twice
+  if (window._monthlyChartInitializing) return;
+  window._monthlyChartInitializing = true;
+
+  // 1) parse data safely
+  let labels, incomes, expenses;
+  try {
+    labels = JSON.parse(document.getElementById('month-labels').textContent);
+    incomes = JSON.parse(document.getElementById('income-values').textContent);
+    expenses = JSON.parse(document.getElementById('expense-values').textContent);
+  } catch (err) {
+    console.error('Chart data parse error', err);
+    window._monthlyChartInitializing = false;
+    return;
+  }
+
+  console.log('Chart data lengths:', labels.length, incomes.length, expenses.length);
+
+  // 2) validate lengths and numeric values
+  if (!Array.isArray(labels) || !Array.isArray(incomes) || !Array.isArray(expenses)) {
+    console.error('Chart data not arrays');
+    window._monthlyChartInitializing = false;
+    return;
+  }
+  if (labels.length !== incomes.length || labels.length !== expenses.length) {
+    console.error('Labels/data length mismatch', labels.length, incomes.length, expenses.length);
+    // still continue but align lengths
+    const minLen = Math.min(labels.length, incomes.length, expenses.length);
+    labels = labels.slice(0, minLen);
+    incomes = incomes.slice(0, minLen);
+    expenses = expenses.slice(0, minLen);
+  }
+
+  // sanitize numeric values
+  incomes = incomes.map(v => isFinite(Number(v)) ? Number(v) : 0);
+  expenses = expenses.map(v => isFinite(Number(v)) ? Number(v) : 0);
+
+  // 3) If chart already exists, update it (safe)
+  const ctx = document.getElementById('monthlyChart').getContext('2d');
+  if (window.monthlyChart instanceof Chart) {
+    window.monthlyChart.data.labels = labels;
+    window.monthlyChart.data.datasets[0].data = incomes;
+    window.monthlyChart.data.datasets[1].data = expenses;
+    window.monthlyChart.update();
+    window._monthlyChartInitializing = false;
+    return;
+  }
+
+  // 4) Create chart once — uses fixed container height, maintainAspectRatio:false,
+  //     and minimal animation to avoid continuous reflows while debugging.
+  try {
+    window.monthlyChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Income',
+            data: incomes,
+            backgroundColor: 'rgba(46, 204, 113, 0.85)',
+            borderColor: 'rgba(46, 204, 113, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Expense',
+            data: expenses,
+            backgroundColor: 'rgba(231, 76, 60, 0.85)',
+            borderColor: 'rgba(231, 76, 60, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        // parent container has fixed pixel height -> safe to disable aspect ratio
+        maintainAspectRatio: false,
+        animation: { duration: 200 }, // short animation
+        scales: {
+          x: { stacked: false },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) { return '₹' + value; }
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                let label = context.dataset.label || '';
+                if (label) label += ': ';
+                if (context.parsed.y !== null) {
+                  label += '₹' + Number(context.parsed.y).toFixed(2);
+                }
+                return label;
+              }
+            }
+          },
+          legend: { position: 'top' }
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Chart creation error', err);
+  } finally {
+    window._monthlyChartInitializing = false;
+  }
+})();
+
+</script>
+
+<!-- pie chart -->
+{{ income_mode_labels|json_script:"income-mode-labels" }}
+{{ income_mode_values|json_script:"income-mode-values" }}
+{{ expense_mode_labels|json_script:"expense-mode-labels" }}
+{{ expense_mode_values|json_script:"expense-mode-values" }}
+
+<script>
+(function(){
+  function safeParse(id) {
+    const el = document.getElementById(id);
+    if (!el) return [];
+    try { return JSON.parse(el.textContent || '[]'); }
+    catch(e) { console.error('JSON parse error for', id, e); return []; }
+  }
+
+  const incLabels = safeParse('income-mode-labels');
+  const incValues = safeParse('income-mode-values');
+  const expLabels = safeParse('expense-mode-labels');
+  const expValues = safeParse('expense-mode-values');
+
+  const palette = ['#4caf50','#2196f3','#ff9800','#9c27b0','#f44336','#00bcd4','#ffeb3b','#795548','#607d8b'];
+
+  function buildDatasetColors(labels) {
+    return labels.map((_, i) => palette[i % palette.length]);
+  }
+
+  function createOrUpdateDoughnut(canvasId, labels, values, windowVarName) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    let dataLabels = Array.isArray(labels) ? labels.slice() : [];
+    let dataValues = Array.isArray(values) ? values.map(v => Number(v) || 0) : [];
+
+    const total = dataValues.reduce((a,b)=>a+(Number(b)||0), 0);
+    if (dataLabels.length === 0 || total === 0) {
+      dataLabels = ['No data'];
+      dataValues = [1];
+    }
+
+    const bgColors = buildDatasetColors(dataLabels);
+
+    if (window[windowVarName] instanceof Chart) {
+      window[windowVarName].data.labels = dataLabels;
+      window[windowVarName].data.datasets[0].data = dataValues;
+      window[windowVarName].data.datasets[0].backgroundColor = bgColors;
+      window[windowVarName].update();
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    window[windowVarName] = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: dataLabels,
+        datasets: [{
+          data: dataValues,
+          backgroundColor: bgColors,
+          borderColor: '#fff',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#fff' } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const v = Number(ctx.parsed) || 0;
+                const ds = ctx.chart.data.datasets[0].data;
+                const total = ds.reduce((a,b)=> a + (Number(b)||0), 0);
+                const pct = total > 0 ? (v / total * 100).toFixed(1) : 0;
+                if (dataLabels.length === 1 && dataLabels[0] === 'No data') return 'No data';
+                return `${ctx.label}: ₹${v.toFixed(2)} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  createOrUpdateDoughnut('incomeModesChart', incLabels, incValues, 'incomeModeChart');
+  createOrUpdateDoughnut('expenseModesChart', expLabels, expValues, 'expenseModeChart');
+})();
+</script>
+
+
+{% endblock %}

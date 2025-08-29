@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block title %}Income - My Finance App{% endblock %}
+{% block content %}
+{% load static %}
+
+<style>
+/* Same style as expenses, you can customize */
+h2 {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 20px;
+}
+.form-box {
+    background: transparent;
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 950px;
+    margin: auto;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+input, select, button {
+    padding: 10px;
+    margin: 10px 5px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+}
+button {
+    background: #3f5efb;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+button:hover {
+    background: #324bce;
+}
+table {
+    width: 100%;
+    margin-top: 30px;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+.total {
+    text-align: right;
+    margin-top: 15px;
+    font-weight: bold;
+    color: #1900ff;
+}
+</style>
+
+<h2>Income Tracker</h2>
+
+<div class="form-box">
+    <form id="incomeForm">
+        {% csrf_token %}
+        <input type="date" id="date" required />
+        <input type="text" id="description" placeholder="Description" required />
+        <select id="mode" required>
+            <option value="" disabled selected>Select mode</option>
+            <option value="cash">Cash</option>
+            <option value="d_cash">D_Cash</option>
+            <option value="icici">ICICI</option>
+            <option value="sbi">SBI</option>
+            <option value="hdfc">HDFC</option>
+            <option value="idfc">IDFC</option>
+            <option value="alpha">Alpha</option>
+        </select>
+        <input type="number" step="0.01" id="amount" placeholder="Amount ₹" required />
+        <button type="submit" id="addBtn">Add Income</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Mode</th>
+                <th>Amount (₹)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="incomeTableBody"></tbody>
+    </table>
+    <div class="total" id="totalIncome">Total: ₹0</div>
+</div>
+
+<script>
+// CSRF helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+// API endpoints
+const API_LIST = "{% url 'income:api_list' %}";
+const API_ADD = "{% url 'income:api_add' %}";
+const API_UPDATE = "{% url 'income:api_update' %}";
+const API_DELETE = "{% url 'income:api_delete' %}";
+
+const tableBody = document.getElementById("incomeTableBody");
+const totalDisplay = document.getElementById("totalIncome");
+const form = document.getElementById("incomeForm");
+let editingId = null;
+
+// Fetch & render income
+async function fetchAndRenderIncome() {
+    const res = await fetch(API_LIST);
+    const income = await res.json();
+    let total = 0;
+    tableBody.innerHTML = "";
+
+    if (!income.length) {
+        tableBody.innerHTML = "<tr><td colspan='5'>No income found.</td></tr>";
+        totalDisplay.textContent = "Total: ₹0";
+        return;
+    }
+
+    income.forEach(item => {
+        total += parseFloat(item.amount);
+        const dateObj = new Date(item.date);
+        const formattedDate = dateObj.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${formattedDate}</td>
+            <td>${item.description}</td>
+            <td>${item.mode}</td>
+            <td>₹${item.amount}</td>
+            <td>
+                <button onclick="startEdit(${item.id}, '${item.date}', '${escapeHtml(item.description)}', '${item.mode}', ${item.amount})">✏️</button>
+                <button onclick="deleteIncome(${item.id})">🗑️</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+    totalDisplay.textContent = `Total: ₹${total.toFixed(2)}`;
+}
+
+// Escape HTML for inline edit
+function escapeHtml(str) {
+    return str ? str.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
+}
+
+// Delete income
+async function deleteIncome(id) {
+    if (!confirm("Delete this income?")) return;
+    const res = await fetch(API_DELETE, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+        body: JSON.stringify({id})
+    });
+    const result = await res.json();
+    if (result.status === 'success') fetchAndRenderIncome();
+}
+
+// Start editing
+function startEdit(id, date, description, mode, amount) {
+    document.getElementById("date").value = date;
+    document.getElementById("description").value = description;
+    document.getElementById("mode").value = mode;
+    document.getElementById("amount").value = amount;
+    editingId = id;
+    document.getElementById("addBtn").textContent = "Update Income";
+}
+
+// Handle form submit
+form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const data = {
+        date: document.getElementById("date").value,
+        description: document.getElementById("description").value,
+        mode: document.getElementById("mode").value,
+        amount: parseFloat(document.getElementById("amount").value)
+    };
+    if (editingId) data.id = editingId;
+
+    const url = editingId ? API_UPDATE : API_ADD;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+        body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+        editingId = null;
+        form.reset();
+        document.getElementById("addBtn").textContent = "Add Income";
+        fetchAndRenderIncome();
+    } else {
+        alert("Error: " + (result.message || "Unknown"));
+    }
+});
+
+// Initial fetch
+window.addEventListener("DOMContentLoaded", fetchAndRenderIncome);
+</script>
+
+{% endblock %}

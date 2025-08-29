@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Staff Dashboard — My Activity</h2>
+
+  <h4>My Income</h4>
+  <table class="table table-striped">
+    <thead><tr><th>Amount</th><th>Description</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for income in incomes %}
+      <tr>
+        <td>{{ income.amount }}</td>
+        <td>{{ income.description }}</td>
+        <td>{{ income.date }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">No income records found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h4>My Expenses</h4>
+  <table class="table table-striped">
+    <thead><tr><th>Amount</th><th>Description</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for exp in expenses %}
+      <tr>
+        <td>{{ exp.amount }}</td>
+        <td>{{ exp.description }}</td>
+        <td>{{ exp.date }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">No expense records found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
